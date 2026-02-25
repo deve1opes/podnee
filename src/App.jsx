@@ -7,19 +7,18 @@ import {
 } from 'lucide-react';
 import { initializeApp } from "firebase/app";
 import { 
-  getAuth, signInAnonymously, 
+  getAuth, signInAnonymously, signInWithCustomToken,
   onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut 
 } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
-// --- Firebase Initialization (Safe Init via Vite Env Variables) ---
+// --- Firebase Initialization (Safe Init for all environments) ---
 let app, auth, db;
-const appId = import.meta.env.VITE_APP_ID || 'debt-planner-default';
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
 try {
-  const configStr = import.meta.env.VITE_FIREBASE_CONFIG;
-  if (configStr) {
-    const firebaseConfig = JSON.parse(configStr);
+  if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+    const firebaseConfig = JSON.parse(__firebase_config);
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
@@ -105,6 +104,7 @@ export default function App() {
       let extra = currentMonthBudget;
       let actualPaidThisMonth = 0;
 
+      // Calculate Interest
       sortedDebts.forEach(d => {
         let int = d.bal * (d.rate / 100 / 12);
         d.bal += int;
@@ -112,6 +112,7 @@ export default function App() {
         d.pay = 0;
       });
 
+      // 1. Manual Debt Overrides
       sortedDebts.forEach(d => {
         if (d.bal > 0 && currentMonthOverride.debts?.[d.id] !== undefined) {
           let manualPay = Math.min(currentMonthOverride.debts[d.id], extra, d.bal);
@@ -120,6 +121,7 @@ export default function App() {
         } else d.isManual = false;
       });
 
+      // 2. Minimums
       sortedDebts.forEach(d => {
         if (d.bal > 0 && !d.isManual) {
           let pay = Math.min(d.min, d.bal, extra);
@@ -127,6 +129,7 @@ export default function App() {
         }
       });
 
+      // 3. Avalanche (Extra)
       if (extra > 0.01) {
         for (let d of sortedDebts) {
           if (d.bal > 0 && !d.isManual) {
@@ -153,7 +156,9 @@ export default function App() {
     if (!auth) return;
     const initAuth = async () => {
       try {
-        if (localStorage.getItem('debt_planner_login_type') !== 'google') {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else if (localStorage.getItem('debt_planner_login_type') !== 'google') {
           await signInAnonymously(auth);
         }
       } catch (error) {
@@ -276,6 +281,8 @@ export default function App() {
   };
 
   const formatMoney = (n) => Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+  
+  const isModified = Object.keys(overrides).length > 0;
   const diffMonths = baseReport && report ? report.totalMonths - baseReport.totalMonths : 0;
   const diffInt = baseReport && report ? report.totalInterest - baseReport.totalInterest : 0;
   const hasChange = diffMonths !== 0 || diffInt !== 0;
