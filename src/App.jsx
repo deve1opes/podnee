@@ -312,7 +312,7 @@ export default function App() {
     return `ระยะเวลาปลดหนี้/ดอกเบี้ยรวมเปลี่ยนแปลงเนื่องจากมีการแก้ไขข้อมูลใน: ${reasonParts.join(', ')}`;
   };
 
-  const formatMoney = (n) => Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+  const formatMoney = (n) => Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   
   const isModified = activeOverrideKeys.length > 0;
   const diffMonths = baseReport && report ? report.totalMonths - baseReport.totalMonths : 0;
@@ -408,7 +408,7 @@ export default function App() {
               <p className="text-slate-600 mt-2">แผนผังการผ่อนชำระหนี้ของ: <span className="font-bold text-slate-900 text-lg">{userName || 'ผู้ใช้งานทั่วไป'}</span></p>
             </div>
             <div className="text-right text-xs text-slate-500 space-y-1">
-              <p>งบชำระ/เดือน: <span className="font-bold text-slate-900">฿{formatMoney(budget)}</span> | ขั้นต่ำ: <span className="font-bold text-slate-900">{minPercent}%</span></p>
+              <p>งบชำระ/เดือน: <span className="font-bold text-slate-900">฿{formatMoney(budget)}</span> | ขั้นต่ำ: <span className="font-bold text-slate-900">{Number(minPercent).toFixed(2)}%</span></p>
               <p>วันที่พิมพ์: <span className="font-medium">{new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></p>
             </div>
           </div>
@@ -456,11 +456,11 @@ export default function App() {
            <div className="bg-emerald-50 p-4 rounded-xl flex gap-4 border border-emerald-100">
              <div>
                <label className="text-xs font-bold text-emerald-800 block mb-1">งบชำระ/เดือน</label>
-               <input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} className="w-28 p-2 rounded-lg border-slate-200 outline-none font-bold text-center bg-white shadow-inner" />
+               <input type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} className="w-28 p-2 rounded-lg border-slate-200 outline-none font-bold text-center bg-white shadow-inner" />
              </div>
              <div>
                <label className="text-xs font-bold text-emerald-800 block mb-1">ขั้นต่ำ (%)</label>
-               <input type="number" value={minPercent} onChange={(e) => setMinPercent(e.target.value)} className="w-16 p-2 rounded-lg border-slate-200 outline-none font-bold text-center bg-white shadow-inner" />
+               <input type="number" step="0.01" value={minPercent} onChange={(e) => setMinPercent(e.target.value)} className="w-16 p-2 rounded-lg border-slate-200 outline-none font-bold text-center bg-white shadow-inner" />
              </div>
            </div>
         </div>
@@ -485,9 +485,9 @@ export default function App() {
                 {debts.map(d => (
                   <tr key={d.id} className="hover:bg-slate-50/30 transition-colors">
                     <td className="p-2 min-w-[120px]"><input type="text" value={d.name} onChange={(e) => handleChange(d.id, 'name', e.target.value)} className="w-full p-2 border border-slate-100 rounded-lg text-sm bg-white shadow-inner" /></td>
-                    <td className="p-2 min-w-[100px]"><input type="number" value={d.balance} onChange={(e) => handleChange(d.id, 'balance', e.target.value)} className="w-full p-2 border border-slate-100 rounded-lg text-sm font-bold bg-white shadow-inner" /></td>
-                    <td className="p-2 min-w-[80px]"><input type="number" value={d.rate} onChange={(e) => handleChange(d.id, 'rate', e.target.value)} className="w-full p-2 border border-slate-100 rounded-lg text-sm font-bold bg-white shadow-inner" /></td>
-                    <td className="p-2 min-w-[100px]"><input type="number" value={d.minPay} onChange={(e) => handleChange(d.id, 'minPay', e.target.value)} placeholder={getSuggestions(d.balance).calcMin.toFixed(0)} className="w-full p-2 border border-slate-100 rounded-lg text-sm bg-white shadow-inner" /></td>
+                    <td className="p-2 min-w-[100px]"><input type="number" step="0.01" value={d.balance} onChange={(e) => handleChange(d.id, 'balance', e.target.value)} className="w-full p-2 border border-slate-100 rounded-lg text-sm font-bold bg-white shadow-inner" /></td>
+                    <td className="p-2 min-w-[80px]"><input type="number" step="0.01" value={d.rate} onChange={(e) => handleChange(d.id, 'rate', e.target.value)} className="w-full p-2 border border-slate-100 rounded-lg text-sm font-bold bg-white shadow-inner" /></td>
+                    <td className="p-2 min-w-[100px]"><input type="number" step="0.01" value={d.minPay} onChange={(e) => handleChange(d.id, 'minPay', e.target.value)} placeholder={getSuggestions(d.balance).calcMin.toFixed(2)} className="w-full p-2 border border-slate-100 rounded-lg text-sm bg-white shadow-inner" /></td>
                     <td className="p-2 text-center"><button onClick={() => handleRemoveDebt(d.id)} className="text-slate-300 hover:text-rose-500 p-2 transition"><Trash2 size={18}/></button></td>
                   </tr>
                 ))}
@@ -571,7 +571,7 @@ export default function App() {
                         <td className="p-3 border-r font-black print:p-1.5 print:text-[9px] print:border-slate-200">฿{formatMoney(row.totalBal)}</td>
                         <td className="p-3 border-r print:p-1.5 print:text-[9px] print:border-slate-200">
                           {isEditingTable ? (
-                            <input type="number" value={overrides[row.month]?.total !== undefined ? overrides[row.month].total : Math.round(row.totalPaid)} 
+                            <input type="number" step="0.01" value={overrides[row.month]?.total !== undefined ? overrides[row.month].total : Number(row.totalPaid).toFixed(2)} 
                               onChange={(e) => {
                                 const val = e.target.value;
                                 const next = {...overrides};
@@ -602,7 +602,7 @@ export default function App() {
                             <Fragment key={`${col.id}-${idx}`}>
                               <td className="p-3 border-r print:p-1.5 print:text-[9px] print:border-slate-200">
                                 {isEditingTable ? (
-                                  <input type="number" value={overrides[row.month]?.debts?.[col.id] !== undefined ? overrides[row.month].debts[col.id] : Math.round(s.pay)}
+                                  <input type="number" step="0.01" value={overrides[row.month]?.debts?.[col.id] !== undefined ? overrides[row.month].debts[col.id] : Number(s.pay).toFixed(2)}
                                     onChange={(e) => {
                                       const val = e.target.value;
                                       const next = {...overrides};
