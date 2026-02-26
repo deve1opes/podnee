@@ -3,7 +3,8 @@ import {
   PlusCircle, Trash2, Calculator, DollarSign, 
   Calendar, TrendingDown, Download, Upload,
   Printer, Cloud, User, AlertCircle,
-  ChevronDown, ChevronUp, BookOpen, Edit, LogOut
+  ChevronDown, ChevronUp, BookOpen, Edit, LogOut,
+  Share2, Copy, Check, X
 } from 'lucide-react';
 import { initializeApp } from "firebase/app";
 import { 
@@ -130,6 +131,23 @@ export default function App() {
   const [isEditingTable, setIsEditingTable] = useState(false);
   const [overrides, setOverrides] = useState({});
   const [showAvalancheInfo, setShowAvalancheInfo] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  // --- Share Logic ---
+  const handleCopyLink = () => {
+    const el = document.createElement('textarea');
+    el.value = window.location.href;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+  
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const shareTitle = encodeURIComponent('Debt Avalanche Planner | วางแผนปลดหนี้อัจฉริยะ');
 
   // --- SEO Optimization ---
   useEffect(() => {
@@ -533,6 +551,44 @@ export default function App() {
         </div>
       )}
 
+      {/* --- Share Modal --- */}
+      {isShareModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 print:hidden">
+          <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full space-y-6 border border-slate-100 relative animate-in zoom-in-95 duration-200">
+            <button onClick={() => setIsShareModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition bg-slate-50 rounded-full p-1"><X size={20}/></button>
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-2"><Share2 size={24} /></div>
+              <h2 className="text-xl font-black text-slate-900">แชร์ให้เพื่อน</h2>
+              <p className="text-slate-500 text-sm">ส่งต่อเครื่องมือวางแผนปลดหนี้ให้คนที่คุณห่วงใย</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 p-3 rounded-2xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+                <div className="w-10 h-10 bg-[#1877F2] rounded-full flex items-center justify-center text-white">
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                </div>
+                <span className="text-xs font-bold text-slate-700">Facebook</span>
+              </a>
+              <a href={`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 p-3 rounded-2xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+                <div className="w-10 h-10 bg-[#00B900] rounded-full flex items-center justify-center text-white">
+                  <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 3.93 8.878 9.387 9.61.365.078.863.242.991.554.116.28.075.714.036 1.002-.005.037-.044.275-.055.337-.043.26-.208 1.01.884.549 1.092-.461 5.888-3.468 8.163-6.023C22.693 14.505 24 12.518 24 10.304z"/></svg>
+                </div>
+                <span className="text-xs font-bold text-slate-700">LINE</span>
+              </a>
+              <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${shareTitle}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 p-3 rounded-2xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+                <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white">
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </div>
+                <span className="text-xs font-bold text-slate-700">X (Twitter)</span>
+              </a>
+            </div>
+            <button onClick={handleCopyLink} className={`w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all border-2 ${isCopied ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
+              {isCopied ? <Check size={18}/> : <Copy size={18}/>}
+              {isCopied ? 'คัดลอกลิงก์แล้ว!' : 'คัดลอกลิงก์ (Copy Link)'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto space-y-6">
         {/* --- ส่วนหัวเฉพาะตอนพิมพ์ (Print Header) --- */}
         <div className="hidden print:block print:mb-4 print:border-b print:border-slate-200 print:pb-4">
@@ -562,6 +618,9 @@ export default function App() {
             {saveStatus === 'saving' && <span className="text-xs text-amber-500 animate-pulse font-medium">กำลังบันทึก...</span>}
             {saveStatus === 'saved' && <span className="text-xs text-emerald-600 flex items-center gap-1 font-medium"><Cloud size={16}/> บันทึกแล้ว</span>}
             {!db && <span className="text-xs text-slate-400 font-medium">Offline Mode</span>}
+            <button onClick={() => setIsShareModalOpen(true)} className="text-xs text-slate-600 hover:text-emerald-600 flex items-center gap-1.5 font-bold bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm hover:bg-slate-50 transition ml-2">
+              <Share2 size={14}/> แชร์แอป
+            </button>
           </div>
         </div>
 
