@@ -207,7 +207,7 @@ export default function App() {
   }, [budget, minPercent, debts, saveUserData]);
 
   const handleGoogleLogin = async () => {
-    if(!auth) return setErrorMessage('Firebase ไม่ได้เชื่อมต่อ');
+    if(!auth) return setErrorMessage('❌ ไม่สามารถเชื่อมต่อฐานข้อมูลได้\n\nสาเหตุที่พบบ่อย (หากใช้งานบน Vercel):\n1. ยังไม่ได้ตั้งค่า VITE_FIREBASE_CONFIG\n2. ตั้งค่าแล้วแต่ยังไม่ได้กด "Redeploy"\n3. รูปแบบโค้ด JSON ไม่ถูกต้อง');
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -340,7 +340,7 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 print:hidden">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-rose-100">
             <AlertCircle className="text-rose-500 mx-auto w-12 h-12" />
-            <p className="text-slate-600 font-medium leading-relaxed">{errorMessage}</p>
+            <p className="text-slate-600 font-medium leading-relaxed whitespace-pre-line">{errorMessage}</p>
             <button onClick={() => setErrorMessage(null)} className="w-full py-2 bg-slate-800 text-white rounded-lg">ตกลง</button>
           </div>
         </div>
