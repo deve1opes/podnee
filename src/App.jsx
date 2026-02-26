@@ -389,6 +389,20 @@ export default function App() {
       )}
 
       <div className="max-w-6xl mx-auto space-y-6">
+        {/* --- ส่วนหัวเฉพาะตอนพิมพ์ (Print Header) --- */}
+        <div className="hidden print:block print:mb-4 print:border-b print:border-slate-200 print:pb-4">
+          <div className="flex justify-between items-end">
+            <div>
+              <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2"><TrendingDown className="text-emerald-500" size={24}/> Debt Avalanche Planner</h1>
+              <p className="text-slate-600 mt-2">แผนผังการผ่อนชำระหนี้ของ: <span className="font-bold text-slate-900 text-lg">{userName || 'ผู้ใช้งานทั่วไป'}</span></p>
+            </div>
+            <div className="text-right text-xs text-slate-500 space-y-1">
+              <p>งบชำระ/เดือน: <span className="font-bold text-slate-900">฿{formatMoney(budget)}</span> | ขั้นต่ำ: <span className="font-bold text-slate-900">{minPercent}%</span></p>
+              <p>วันที่พิมพ์: <span className="font-medium">{new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></p>
+            </div>
+          </div>
+        </div>
+
         <div className="flex justify-between items-center px-2 print:hidden">
           <div className="bg-white px-4 py-2 rounded-full border border-slate-200 flex items-center gap-2 shadow-sm">
             <User size={16} className="text-emerald-500" />
