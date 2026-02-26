@@ -422,18 +422,22 @@ export default function App() {
     return (t !== undefined && t !== '') || (d && Object.values(d).some(v => v !== undefined && v !== ''));
   });
 
-  const getOverrideReason = () => {
-    if (activeOverrideKeys.length === 0) return null;
+  const getOverrideDetailsList = () => {
+    if (activeOverrideKeys.length === 0) return [];
     const sortedKeys = activeOverrideKeys.map(Number).sort((a, b) => a - b);
-    if (sortedKeys.length > 3) return `ระยะเวลาปลดหนี้/ดอกเบี้ยรวมเปลี่ยนแปลงเนื่องจากมีการปรับแต่งข้อมูลด้วยตนเองรวม ${sortedKeys.length} เดือน`;
-    let reasonParts = [];
+    let details = [];
     sortedKeys.forEach(m => {
-      let part = `เดือนที่ ${m}`;
-      if (overrides[m].total !== undefined && overrides[m].total !== '') part += " (แก้ไขยอดจ่ายรวม)";
-      if (overrides[m].debts && Object.values(overrides[m].debts).some(v => v !== undefined && v !== '')) part += " (แก้ไขยอดโอนรายก้อน)";
-      reasonParts.push(part);
+      let part = `เดือนที่ ${m}: `;
+      let actions = [];
+      if (overrides[m].total !== undefined && overrides[m].total !== '') actions.push("แก้ไขยอดจ่ายรวม");
+      if (overrides[m].debts && Object.values(overrides[m].debts).some(v => v !== undefined && v !== '')) actions.push("แก้ไขยอดโอนรายก้อน");
+      
+      if (actions.length > 0) {
+        part += actions.join(" และ ");
+        details.push(part);
+      }
     });
-    return `ระยะเวลาปลดหนี้/ดอกเบี้ยรวมเปลี่ยนแปลงเนื่องจากมีการแก้ไขข้อมูลใน: ${reasonParts.join(', ')}`;
+    return details;
   };
 
   const formatMoney = (n) => Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -696,15 +700,15 @@ export default function App() {
             </div>
           </div>
 
-          {getOverrideReason() && (
+          {isModified && (
             <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl text-xs font-bold flex gap-3 items-start print:hidden">
-                <span className="text-xl font-black leading-none mt-1 text-amber-500">*</span> 
-                <p className="leading-relaxed">{getOverrideReason()} (เปรียบเทียบกับแผน Avalanche อัตโนมัติ)</p>
-              </div>
-            )}
+              <span className="text-xl font-black leading-none mt-1 text-amber-500">*</span> 
+              <p className="leading-relaxed">ระยะเวลาปลดหนี้/ดอกเบี้ยรวมเปลี่ยนแปลง เนื่องจากมีการปรับแต่งข้อมูลด้วยตนเองรวม {activeOverrideKeys.length} เดือน (ดูรายละเอียดด้านล่างตาราง)</p>
+            </div>
+          )}
 
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden print:shadow-none print:border-none">
-              <div className="p-5 bg-slate-50/80 border-b font-black text-slate-700 flex justify-between items-center print:bg-white print:px-0">
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden print:shadow-none print:border-none">
+            <div className="p-5 bg-slate-50/80 border-b font-black text-slate-700 flex justify-between items-center print:bg-white print:px-0">
                 <span>จำลองการผ่อนชำระรายเดือน</span>
                 <span className="text-[10px] font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-100 uppercase">Interactive Simulation</span>
               </div>
@@ -803,6 +807,18 @@ export default function App() {
                   </tbody>
                 </table>
               </div>
+              
+              {/* --- แสดงบันทึกการปรับแต่งรูปแบบ List ท้ายตาราง (สำหรับดูบนเว็บและตอนพิมพ์) --- */}
+              {isModified && (
+                <div className="p-5 bg-slate-50 border-t print:bg-white print:border-t-2 print:border-slate-300 print:mt-4 print:p-2">
+                  <h4 className="font-bold text-sm text-slate-800 mb-2 print:text-xs">📝 บันทึกการปรับแต่งแผน (เปรียบเทียบกับแผนอัตโนมัติ):</h4>
+                  <ul className="list-disc pl-6 text-xs text-slate-600 space-y-1 print:text-[10px]">
+                    {getOverrideDetailsList().map((detail, idx) => (
+                      <li key={idx}>{detail}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         )}
