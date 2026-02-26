@@ -49,6 +49,38 @@ export default function App() {
   const [overrides, setOverrides] = useState({});
   const [showAvalancheInfo, setShowAvalancheInfo] = useState(false);
 
+  // --- SEO Optimization ---
+  useEffect(() => {
+    // กำหนด Title ของหน้าเว็บ
+    document.title = "Debt Avalanche Planner | วางแผนปลดหนี้อัจฉริยะ";
+
+    // ฟังก์ชันช่วยเหลือสำหรับสร้างหรืออัปเดต Meta Tags
+    const setMetaTag = (attrName, attrValue, content) => {
+      let element = document.querySelector(`meta[${attrName}="${attrValue}"]`);
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(attrName, attrValue);
+        document.head.appendChild(element);
+      }
+      element.setAttribute('content', content);
+    };
+
+    // SEO ทั่วไปสำหรับการค้นหาบน Google
+    setMetaTag('name', 'description', 'แอปพลิเคชันวางแผนปลดหนี้ด้วยวิธี Debt Avalanche คำนวณดอกเบี้ย วางแผนผ่อนชำระ และช่วยประหยัดดอกเบี้ยให้คุณได้มากที่สุด');
+    setMetaTag('name', 'keywords', 'วางแผนปลดหนี้, จัดการหนี้, คำนวณหนี้, Debt Avalanche, ลดต้นลดดอก, หนี้บัตรเครดิต, อิสรภาพทางการเงิน');
+    setMetaTag('name', 'author', 'Debt Avalanche Planner');
+    
+    // Open Graph (สำหรับการแชร์ลิงก์บน Facebook, LINE)
+    setMetaTag('property', 'og:title', 'Debt Avalanche Planner | วางแผนปลดหนี้อัจฉริยะ');
+    setMetaTag('property', 'og:description', 'คำนวณและวางแผนปิดหนี้ให้ไวที่สุด ประหยัดดอกเบี้ยที่สุดด้วยกลยุทธ์ Debt Avalanche ใช้งานฟรี!');
+    setMetaTag('property', 'og:type', 'website');
+    
+    // Twitter Card (สำหรับการแชร์บน Twitter/X)
+    setMetaTag('name', 'twitter:card', 'summary');
+    setMetaTag('name', 'twitter:title', 'Debt Avalanche Planner');
+    setMetaTag('name', 'twitter:description', 'แอปพลิเคชันคำนวณแผนปิดหนี้ด้วยวิธี Debt Avalanche ประหยัดดอกเบี้ยให้ได้มากที่สุด');
+  }, []);
+
   const getSuggestions = useCallback((balance) => {
     const bal = parseFloat(balance) || 0;
     if (bal <= 0) return { calcMin: 0 };
@@ -435,36 +467,36 @@ export default function App() {
             <div className="flex flex-col md:flex-row justify-between items-start gap-4 print:hidden">
               <button onClick={() => setIsEditingTable(!isEditingTable)} className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold border transition-all shadow-sm ${isEditingTable ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}><Edit size={18}/> {isEditingTable ? "บันทึกและปิดโหมดแก้ไข" : "แก้ไขตารางจำลองหนี้"}</button>
               <div className="flex gap-2">
-                <button onClick={() => window.print()} className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl flex items-center gap-2 shadow-sm font-bold hover:bg-slate-50"><Printer size={18}/> พิมพ์ PDF</button>
-                <button onClick={exportToCSV} className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl flex items-center gap-2 shadow-sm font-bold hover:bg-emerald-700"><Download size={18}/> ส่งออก Excel</button>
-              </div>
+              <button onClick={() => window.print()} className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl flex items-center gap-2 shadow-sm font-bold hover:bg-slate-50"><Printer size={18}/> พิมพ์ PDF</button>
+              <button onClick={exportToCSV} className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl flex items-center gap-2 shadow-sm font-bold hover:bg-emerald-700"><Download size={18}/> ส่งออก Excel</button>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white p-7 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5">
-                <div className="p-4 bg-emerald-100 rounded-2xl text-emerald-600"><Calendar size={32}/></div>
-                <div>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mb-1">ระยะเวลาปลดหนี้รวม</p>
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <p className="text-4xl font-black text-slate-900">{report.totalMonths} <span className="text-sm font-bold text-slate-400 uppercase">เดือน</span>{hasChange && <span className="text-amber-500 ml-1 text-2xl font-black">*</span>}</p>
-                    {isModified && diffMonths !== 0 && <span className={`text-xs font-black px-2 py-0.5 rounded-full ${diffMonths < 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{diffMonths < 0 ? `เร็วขึ้น ${Math.abs(diffMonths)}` : `ช้าลง ${diffMonths}`} เดือน</span>}
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white p-7 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5">
-                <div className="p-4 bg-rose-100 rounded-2xl text-rose-600"><DollarSign size={32}/></div>
-                <div>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mb-1">ดอกเบี้ยรวมที่ต้องจ่าย</p>
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <p className="text-4xl font-black text-rose-600">฿{formatMoney(report.totalInterest)}{hasChange && <span className="text-amber-500 ml-1 text-2xl font-black">*</span>}</p>
-                    {isModified && diffInt !== 0 && <span className={`text-xs font-black px-2 py-0.5 rounded-full ${diffInt < 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{diffInt < 0 ? `ประหยัด ฿${formatMoney(Math.abs(diffInt))}` : `จ่ายเพิ่ม ฿${formatMoney(diffInt)}`}</span>}
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:grid-cols-2 print:gap-4">
+            <div className="bg-white p-7 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 print:p-4 print:rounded-2xl print:shadow-none print:border-slate-200">
+              <div className="p-4 bg-emerald-100 rounded-2xl text-emerald-600 print:p-3"><Calendar size={32} className="print:w-6 print:h-6"/></div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mb-1">ระยะเวลาปลดหนี้รวม</p>
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <p className="text-4xl font-black text-slate-900 print:text-2xl">{report.totalMonths} <span className="text-sm font-bold text-slate-400 uppercase print:text-xs">เดือน</span>{hasChange && <span className="text-amber-500 ml-1 text-2xl font-black print:text-lg">*</span>}</p>
+                  {isModified && diffMonths !== 0 && <span className={`text-xs font-black px-2 py-0.5 rounded-full ${diffMonths < 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{diffMonths < 0 ? `เร็วขึ้น ${Math.abs(diffMonths)}` : `ช้าลง ${diffMonths}`} เดือน</span>}
                 </div>
               </div>
             </div>
+            <div className="bg-white p-7 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 print:p-4 print:rounded-2xl print:shadow-none print:border-slate-200">
+              <div className="p-4 bg-rose-100 rounded-2xl text-rose-600 print:p-3"><DollarSign size={32} className="print:w-6 print:h-6"/></div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mb-1">ดอกเบี้ยรวมที่ต้องจ่าย</p>
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <p className="text-4xl font-black text-rose-600 print:text-2xl">฿{formatMoney(report.totalInterest)}{hasChange && <span className="text-amber-500 ml-1 text-2xl font-black print:text-lg">*</span>}</p>
+                  {isModified && diffInt !== 0 && <span className={`text-xs font-black px-2 py-0.5 rounded-full ${diffInt < 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{diffInt < 0 ? `ประหยัด ฿${formatMoney(Math.abs(diffInt))}` : `จ่ายเพิ่ม ฿${formatMoney(diffInt)}`}</span>}
+                </div>
+              </div>
+            </div>
+          </div>
 
-            {getOverrideReason() && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl text-xs font-bold flex gap-3 items-start print:hidden">
+          {getOverrideReason() && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl text-xs font-bold flex gap-3 items-start print:hidden">
                 <span className="text-xl font-black leading-none mt-1 text-amber-500">*</span> 
                 <p className="leading-relaxed">{getOverrideReason()} (เปรียบเทียบกับแผน Avalanche อัตโนมัติ)</p>
               </div>
