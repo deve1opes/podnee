@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 import { 
   PlusCircle, Trash2, Calculator, DollarSign, 
-  Calendar, TrendingDown, Download, 
+  Calendar, TrendingDown, Download, Upload,
   Printer, Cloud, User, AlertCircle,
   ChevronDown, ChevronUp, BookOpen, Edit, LogOut
 } from 'lucide-react';
@@ -361,6 +361,48 @@ export default function App() {
     setOverrides({});
   };
 
+  const exportDebts = () => {
+    try {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(debts, null, 2));
+      const downloadNode = document.createElement('a');
+      downloadNode.setAttribute("href", dataStr);
+      downloadNode.setAttribute("download", `debt_list_${userName || 'backup'}.json`);
+      document.body.appendChild(downloadNode);
+      downloadNode.click();
+      downloadNode.remove();
+    } catch (err) {
+      setErrorMessage("เกิดข้อผิดพลาดในการส่งออกข้อมูล");
+    }
+  };
+
+  const importDebts = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        if (Array.isArray(importedData)) {
+          // ตรวจสอบและจัดการข้อมูลที่โหลดเข้ามา
+          const validDebts = importedData.map((d, i) => ({
+            id: d.id || new Date().getTime() + i,
+            name: d.name || `หนี้ ${i + 1}`,
+            balance: d.balance !== undefined ? d.balance : '',
+            rate: d.rate !== undefined ? d.rate : '',
+            minPay: d.minPay !== undefined ? d.minPay : ''
+          }));
+          setDebts(validDebts);
+        } else {
+          setErrorMessage("❌ รูปแบบไฟล์ไม่ถูกต้อง\nกรุณาใช้ไฟล์ .json ที่ได้จากการกดปุ่ม 'ส่งออก' เท่านั้น");
+        }
+      } catch (err) {
+        setErrorMessage("❌ ไม่สามารถอ่านไฟล์ได้\nกรุณาตรวจสอบว่าไฟล์ไม่เสียหาย");
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = null; // รีเซ็ตค่าเพื่อให้สามารถเลือกไฟล์เดิมซ้ำได้
+  };
+
   const handleAddDebt = () => {
     const newId = debts.length > 0 ? Math.max(...debts.map(d => d.id)) + 1 : 1;
     setDebts([...debts, { id: newId, name: '', balance: '', rate: '', minPay: '' }]);
@@ -548,9 +590,20 @@ export default function App() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden print:hidden">
-          <div className="p-4 border-b flex justify-between items-center bg-slate-50/50">
+          <div className="p-4 border-b flex justify-between items-center bg-slate-50/50 flex-wrap gap-3">
             <h2 className="font-bold text-slate-700">รายการหนี้สิน</h2>
-            <button onClick={handleAddDebt} className="text-xs font-bold px-4 py-2 bg-white border border-slate-200 rounded-xl flex items-center gap-2 shadow-sm hover:bg-slate-50 transition"><PlusCircle size={16} className="text-emerald-500"/> เพิ่มรายการ</button>
+            <div className="flex gap-2 items-center flex-wrap">
+              <input type="file" accept=".json" id="import-debts" className="hidden" onChange={importDebts} />
+              <label htmlFor="import-debts" className="text-xs font-bold px-3 py-2 bg-white border border-slate-200 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-slate-50 cursor-pointer transition text-slate-600">
+                <Upload size={14} className="text-blue-500"/> นำเข้า
+              </label>
+              <button onClick={exportDebts} className="text-xs font-bold px-3 py-2 bg-white border border-slate-200 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-slate-50 transition text-slate-600">
+                <Download size={14} className="text-blue-500"/> ส่งออก
+              </button>
+              <button onClick={handleAddDebt} className="text-xs font-bold px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 shadow-sm hover:bg-emerald-100 transition text-emerald-700">
+                <PlusCircle size={16} className="text-emerald-600"/> เพิ่มรายการ
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
