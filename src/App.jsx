@@ -12,6 +12,88 @@ import {
 } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
+// --- MathInput Component (ระบบกรอกตัวเลขรองรับการคำนวณ) ---
+const MathInput = ({ value, onChange, onBlur, className, placeholder }) => {
+  const [localValue, setLocalValue] = useState(value !== undefined ? String(value) : '');
+  const [isFocused, setIsFocused] = useState(false);
+  const [preview, setPreview] = useState(null);
+
+  // อัปเดตข้อมูลจากภายนอก "เฉพาะตอนที่ไม่ได้กำลังพิมพ์อยู่" เพื่อแก้ปัญหาลบแล้วเด้งกลับ
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(value !== undefined ? String(value) : '');
+    }
+  }, [value, isFocused]);
+
+  const evaluate = (str) => {
+    if (!str) return null;
+    try {
+      const sanitized = str.toString().replace(/[^0-9+\-*/.()]/g, '');
+      if (!sanitized) return null;
+      if (!/[+\-*/()]/.test(sanitized)) return null; // คำนวณเฉพาะเมื่อมีเครื่องหมาย
+      const res = new Function('return ' + sanitized)();
+      return isFinite(res) ? res : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleChange = (e) => {
+    // กรองอนุญาตให้พิมพ์เฉพาะตัวเลขและเครื่องหมายคำนวณ
+    const val = e.target.value.replace(/[^0-9+\-*/.() ]/g, '');
+    setLocalValue(val);
+    const res = evaluate(val);
+    setPreview(res);
+    // ส่งค่าแบบสดๆ ให้ Parent เพื่อให้คำนวณเบื้องหลัง
+    if (onChange) onChange({ target: { value: val } });
+  };
+
+  const handleBlur = (e) => {
+    setIsFocused(false);
+    const res = evaluate(localValue);
+    let finalVal = localValue;
+    
+    if (res !== null) {
+      // หากเป็นสูตรคณิตศาสตร์ที่สมบูรณ์ ให้แปลงเป็นผลลัพธ์
+      finalVal = Number(res).toFixed(2);
+    } else if (localValue && !isNaN(parseFloat(localValue))) {
+      // หากเป็นตัวเลขปกติ ให้จัดฟอร์แมตทศนิยม 2 ตำแหน่ง
+      finalVal = Number(parseFloat(localValue)).toFixed(2);
+    } else {
+      finalVal = ''; 
+    }
+
+    setLocalValue(finalVal);
+    // ส่งข้อมูลขั้นสุดท้ายกลับไป
+    if (onChange && finalVal !== localValue) onChange({ target: { value: finalVal } });
+    if (onBlur) onBlur({ target: { value: finalVal } });
+    setPreview(null);
+  };
+
+  const isWFull = className && className.includes('w-full');
+
+  return (
+    <div className={`relative inline-block ${isWFull ? 'w-full' : ''} align-middle`}>
+      {isFocused && preview !== null && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-lg whitespace-nowrap z-50 animate-in fade-in zoom-in duration-200 pointer-events-none print:hidden">
+          = {Number(preview).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-emerald-700"></div>
+        </div>
+      )}
+      <input
+        type="text"
+        value={localValue}
+        onChange={handleChange}
+        onFocus={() => setIsFocused(true)}
+        onBlur={handleBlur}
+        className={className}
+        placeholder={placeholder}
+        autoComplete="off"
+      />
+    </div>
+  );
+};
+
 // --- Firebase Initialization (Safe Init for all environments) ---
 let app, auth, db;
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -456,11 +538,11 @@ export default function App() {
            <div className="bg-emerald-50 p-4 rounded-xl flex gap-4 border border-emerald-100">
              <div>
                <label className="text-xs font-bold text-emerald-800 block mb-1">งบชำระ/เดือน</label>
-               <input type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} className="w-28 p-2 rounded-lg border-slate-200 outline-none font-bold text-center bg-white shadow-inner" />
+               <MathInput value={budget} onChange={(e) => setBudget(e.target.value)} className="w-28 p-2 rounded-lg border-slate-200 outline-none font-bold text-center bg-white shadow-inner" />
              </div>
              <div>
                <label className="text-xs font-bold text-emerald-800 block mb-1">ขั้นต่ำ (%)</label>
-               <input type="number" step="0.01" value={minPercent} onChange={(e) => setMinPercent(e.target.value)} className="w-16 p-2 rounded-lg border-slate-200 outline-none font-bold text-center bg-white shadow-inner" />
+               <MathInput value={minPercent} onChange={(e) => setMinPercent(e.target.value)} className="w-16 p-2 rounded-lg border-slate-200 outline-none font-bold text-center bg-white shadow-inner" />
              </div>
            </div>
         </div>
@@ -485,9 +567,9 @@ export default function App() {
                 {debts.map(d => (
                   <tr key={d.id} className="hover:bg-slate-50/30 transition-colors">
                     <td className="p-2 min-w-[120px]"><input type="text" value={d.name} onChange={(e) => handleChange(d.id, 'name', e.target.value)} className="w-full p-2 border border-slate-100 rounded-lg text-sm bg-white shadow-inner" /></td>
-                    <td className="p-2 min-w-[100px]"><input type="number" step="0.01" value={d.balance} onChange={(e) => handleChange(d.id, 'balance', e.target.value)} className="w-full p-2 border border-slate-100 rounded-lg text-sm font-bold bg-white shadow-inner" /></td>
-                    <td className="p-2 min-w-[80px]"><input type="number" step="0.01" value={d.rate} onChange={(e) => handleChange(d.id, 'rate', e.target.value)} className="w-full p-2 border border-slate-100 rounded-lg text-sm font-bold bg-white shadow-inner" /></td>
-                    <td className="p-2 min-w-[100px]"><input type="number" step="0.01" value={d.minPay} onChange={(e) => handleChange(d.id, 'minPay', e.target.value)} placeholder={getSuggestions(d.balance).calcMin.toFixed(2)} className="w-full p-2 border border-slate-100 rounded-lg text-sm bg-white shadow-inner" /></td>
+                    <td className="p-2 min-w-[100px]"><MathInput value={d.balance} onChange={(e) => handleChange(d.id, 'balance', e.target.value)} className="w-full p-2 border border-slate-100 rounded-lg text-sm font-bold bg-white shadow-inner" /></td>
+                    <td className="p-2 min-w-[80px]"><MathInput value={d.rate} onChange={(e) => handleChange(d.id, 'rate', e.target.value)} className="w-full p-2 border border-slate-100 rounded-lg text-sm font-bold bg-white shadow-inner" /></td>
+                    <td className="p-2 min-w-[100px]"><MathInput value={d.minPay} onChange={(e) => handleChange(d.id, 'minPay', e.target.value)} placeholder={getSuggestions(d.balance).calcMin.toFixed(2)} className="w-full p-2 border border-slate-100 rounded-lg text-sm bg-white shadow-inner" /></td>
                     <td className="p-2 text-center"><button onClick={() => handleRemoveDebt(d.id)} className="text-slate-300 hover:text-rose-500 p-2 transition"><Trash2 size={18}/></button></td>
                   </tr>
                 ))}
@@ -571,7 +653,7 @@ export default function App() {
                         <td className="p-3 border-r font-black print:p-1.5 print:text-[9px] print:border-slate-200">฿{formatMoney(row.totalBal)}</td>
                         <td className="p-3 border-r print:p-1.5 print:text-[9px] print:border-slate-200">
                           {isEditingTable ? (
-                            <input type="number" step="0.01" value={overrides[row.month]?.total !== undefined ? overrides[row.month].total : Number(row.totalPaid).toFixed(2)} 
+                            <MathInput value={overrides[row.month]?.total !== undefined ? overrides[row.month].total : Number(row.totalPaid).toFixed(2)} 
                               onChange={(e) => {
                                 const val = e.target.value;
                                 const next = {...overrides};
@@ -602,7 +684,7 @@ export default function App() {
                             <Fragment key={`${col.id}-${idx}`}>
                               <td className="p-3 border-r print:p-1.5 print:text-[9px] print:border-slate-200">
                                 {isEditingTable ? (
-                                  <input type="number" step="0.01" value={overrides[row.month]?.debts?.[col.id] !== undefined ? overrides[row.month].debts[col.id] : Number(s.pay).toFixed(2)}
+                                  <MathInput value={overrides[row.month]?.debts?.[col.id] !== undefined ? overrides[row.month].debts[col.id] : Number(s.pay).toFixed(2)}
                                     onChange={(e) => {
                                       const val = e.target.value;
                                       const next = {...overrides};
