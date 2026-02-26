@@ -51,10 +51,8 @@ export default function App() {
 
   // --- SEO Optimization ---
   useEffect(() => {
-    // กำหนด Title ของหน้าเว็บ
     document.title = "Debt Avalanche Planner | วางแผนปลดหนี้อัจฉริยะ";
 
-    // ฟังก์ชันช่วยเหลือสำหรับสร้างหรืออัปเดต Meta Tags
     const setMetaTag = (attrName, attrValue, content) => {
       let element = document.querySelector(`meta[${attrName}="${attrValue}"]`);
       if (!element) {
@@ -65,17 +63,12 @@ export default function App() {
       element.setAttribute('content', content);
     };
 
-    // SEO ทั่วไปสำหรับการค้นหาบน Google
     setMetaTag('name', 'description', 'แอปพลิเคชันวางแผนปลดหนี้ด้วยวิธี Debt Avalanche คำนวณดอกเบี้ย วางแผนผ่อนชำระ และช่วยประหยัดดอกเบี้ยให้คุณได้มากที่สุด');
     setMetaTag('name', 'keywords', 'วางแผนปลดหนี้, จัดการหนี้, คำนวณหนี้, Debt Avalanche, ลดต้นลดดอก, หนี้บัตรเครดิต, อิสรภาพทางการเงิน');
     setMetaTag('name', 'author', 'Debt Avalanche Planner');
-    
-    // Open Graph (สำหรับการแชร์ลิงก์บน Facebook, LINE)
     setMetaTag('property', 'og:title', 'Debt Avalanche Planner | วางแผนปลดหนี้อัจฉริยะ');
     setMetaTag('property', 'og:description', 'คำนวณและวางแผนปิดหนี้ให้ไวที่สุด ประหยัดดอกเบี้ยที่สุดด้วยกลยุทธ์ Debt Avalanche ใช้งานฟรี!');
     setMetaTag('property', 'og:type', 'website');
-    
-    // Twitter Card (สำหรับการแชร์บน Twitter/X)
     setMetaTag('name', 'twitter:card', 'summary');
     setMetaTag('name', 'twitter:title', 'Debt Avalanche Planner');
     setMetaTag('name', 'twitter:description', 'แอปพลิเคชันคำนวณแผนปิดหนี้ด้วยวิธี Debt Avalanche ประหยัดดอกเบี้ยให้ได้มากที่สุด');
@@ -136,7 +129,6 @@ export default function App() {
       let extra = currentMonthBudget;
       let actualPaidThisMonth = 0;
 
-      // Calculate Interest
       sortedDebts.forEach(d => {
         let int = d.bal * (d.rate / 100 / 12);
         d.bal += int;
@@ -144,7 +136,6 @@ export default function App() {
         d.pay = 0;
       });
 
-      // 1. Manual Debt Overrides
       sortedDebts.forEach(d => {
         if (d.bal > 0 && currentMonthOverride.debts?.[d.id] !== undefined) {
           let manualPay = Math.min(currentMonthOverride.debts[d.id], extra, d.bal);
@@ -153,7 +144,6 @@ export default function App() {
         } else d.isManual = false;
       });
 
-      // 2. Minimums
       sortedDebts.forEach(d => {
         if (d.bal > 0 && !d.isManual) {
           let pay = Math.min(d.min, d.bal, extra);
@@ -161,7 +151,6 @@ export default function App() {
         }
       });
 
-      // 3. Avalanche (Extra)
       if (extra > 0.01) {
         for (let d of sortedDebts) {
           if (d.bal > 0 && !d.isManual) {
@@ -319,6 +308,25 @@ export default function App() {
   const diffInt = baseReport && report ? report.totalInterest - baseReport.totalInterest : 0;
   const hasChange = diffMonths !== 0 || diffInt !== 0;
 
+  // --- Dynamic Print Style ---
+  const getPrintStyle = () => {
+    if (!report) return "";
+    const count = report.originalCols.length;
+    const isLandscape = count >= 2; // บังคับแนวนอนถ้ามีหนี้ตั้งแต่ 2 ก้อนขึ้นไป
+    let fontSize = count > 5 ? "6pt" : count > 3 ? "7pt" : "8pt";
+    
+    return `
+      @media print { 
+        @page { size: A4 ${isLandscape ? 'landscape' : 'portrait'}; margin: 1cm; }
+        body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        table { font-size: ${fontSize} !important; width: 100% !important; page-break-inside: auto; }
+        tr { page-break-inside: avoid; page-break-after: auto; }
+        thead { display: table-header-group; }
+        tfoot { display: table-footer-group; }
+      }
+    `;
+  };
+
   const exportToCSV = () => {
     if (!report) return;
     let csvContent = "\uFEFFเดือนที่,หนี้คงเหลือรวม,จ่ายรวมเดือนนี้";
@@ -345,6 +353,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen text-slate-800 p-4 md:p-8 print:bg-white print:p-0">
+      <style>{getPrintStyle()}</style>
+
       {isNamePromptOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 print:hidden">
           <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full space-y-6 text-center border border-slate-100">
@@ -508,26 +518,33 @@ export default function App() {
                 <span className="text-[10px] font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-100 uppercase">Interactive Simulation</span>
               </div>
               <div className="overflow-x-auto max-h-[600px] print:max-h-none print:overflow-visible">
-                <table className="w-full text-right text-xs whitespace-nowrap">
+                {/* อัปเดตตารางสำหรับ Print Layout ตรงนี้ */}
+                <table className="w-full text-right text-xs whitespace-nowrap print:whitespace-normal">
                   <thead className="bg-slate-900 text-white sticky top-0 z-30">
-                    <tr className="divide-x divide-slate-800">
-                      <th className="p-4 text-center align-middle font-black">เดือน</th>
-                      <th className="p-4 text-center align-middle font-black">หนี้คงเหลือรวม</th>
-                      <th className={`p-4 text-center align-middle font-black transition-colors ${isEditingTable ? 'bg-amber-600 text-white' : 'text-emerald-400'}`}>ยอดชำระรวม {isEditingTable && <span className="block text-[8px] font-normal">(แก้ไข)</span>}</th>
+                    <tr className="divide-x divide-slate-800 print:divide-slate-300">
+                      <th className="p-4 text-center align-middle font-black print:p-1.5 print:text-[9px] print:text-slate-700">เดือน</th>
+                      <th className="p-4 text-center align-middle font-black print:p-1.5 print:text-[9px] print:text-slate-700">หนี้คงเหลือรวม</th>
+                      <th className={`p-4 text-center align-middle font-black transition-colors print:p-1.5 print:text-[9px] print:text-slate-700 ${isEditingTable ? 'bg-amber-600 text-white' : 'text-emerald-400'}`}>ยอดชำระรวม {isEditingTable && <span className="block text-[8px] font-normal">(แก้ไข)</span>}</th>
                       {report.originalCols.map(d => (
                         <Fragment key={d.id}>
-                          <th className="p-4 text-center align-middle bg-slate-800/80 font-black">{d.name}<br/><span className={`text-[8px] font-bold tracking-widest ${isEditingTable ? 'text-amber-400' : 'text-emerald-400'}`}>โอนจ่าย {isEditingTable && '(แก้ไข)'}</span></th>
-                          <th className="p-4 text-center align-middle bg-slate-800/80 font-black">{d.name}<br/><span className="text-[8px] font-bold tracking-widest text-slate-500 uppercase">คงเหลือ</span></th>
+                          <th className="p-4 text-center align-middle bg-slate-800/80 font-black print:p-1.5 print:bg-white print:text-slate-700 print:text-[9px] print:leading-tight">
+                            {d.name}<br/>
+                            <span className={`text-[8px] font-bold tracking-widest print:text-[8px] print:text-slate-500 ${isEditingTable ? 'text-amber-400' : 'text-emerald-400'}`}>โอนจ่าย {isEditingTable && '(แก้ไข)'}</span>
+                          </th>
+                          <th className="p-4 text-center align-middle bg-slate-800/80 font-black print:p-1.5 print:bg-white print:text-slate-700 print:text-[9px] print:leading-tight">
+                            {d.name}<br/>
+                            <span className="text-[8px] font-bold tracking-widest text-slate-500 uppercase print:text-[8px] print:text-slate-400">คงเหลือ</span>
+                          </th>
                         </Fragment>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 print:divide-slate-200">
                     {report.rows.map((row, idx) => (
                       <tr key={idx} className={idx === 0 ? 'bg-emerald-50/50 font-bold text-slate-900' : 'hover:bg-slate-50/50 transition-colors'}>
-                        <td className="p-3 border-r text-center font-bold text-slate-500">{row.month}</td>
-                        <td className="p-3 border-r font-black">฿{formatMoney(row.totalBal)}</td>
-                        <td className="p-3 border-r">
+                        <td className="p-3 border-r text-center font-bold text-slate-500 print:p-1.5 print:text-[9px] print:border-slate-200">{row.month}</td>
+                        <td className="p-3 border-r font-black print:p-1.5 print:text-[9px] print:border-slate-200">฿{formatMoney(row.totalBal)}</td>
+                        <td className="p-3 border-r print:p-1.5 print:text-[9px] print:border-slate-200">
                           {isEditingTable ? (
                             <input type="number" value={overrides[row.month]?.total !== undefined ? overrides[row.month].total : Math.round(row.totalPaid)} 
                               onChange={(e) => {
@@ -546,7 +563,7 @@ export default function App() {
                           const s = row.debtsState[col.id];
                           return (
                             <Fragment key={`${col.id}-${idx}`}>
-                              <td className="p-3 border-r">
+                              <td className="p-3 border-r print:p-1.5 print:text-[9px] print:border-slate-200">
                                 {isEditingTable ? (
                                   <input type="number" value={overrides[row.month]?.debts?.[col.id] !== undefined ? overrides[row.month].debts[col.id] : Math.round(s.pay)}
                                     onChange={(e) => {
@@ -562,7 +579,7 @@ export default function App() {
                                 ) : null}
                                 <span className={isEditingTable ? 'hidden print:inline font-bold' : 'font-bold'}>{formatMoney(s.pay)}</span>
                               </td>
-                              <td className="p-3 border-r text-slate-400 font-medium italic">{formatMoney(s.bal)}</td>
+                              <td className="p-3 border-r text-slate-400 font-medium italic print:p-1.5 print:text-[9px] print:border-slate-200">{formatMoney(s.bal)}</td>
                             </Fragment>
                           );
                         })}
