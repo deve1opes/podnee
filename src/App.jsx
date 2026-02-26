@@ -125,7 +125,11 @@ export default function App() {
     while (remainBal > 0.01 && month < 600) {
       month++;
       let currentMonthOverride = currentOverrides[month] || {};
-      let currentMonthBudget = currentMonthOverride.total !== undefined ? currentMonthOverride.total : baseBgt;
+      
+      let rawTotal = currentMonthOverride.total;
+      let parsedTotal = parseFloat(rawTotal);
+      let currentMonthBudget = (rawTotal !== undefined && rawTotal !== '' && !isNaN(parsedTotal)) ? parsedTotal : baseBgt;
+      
       let extra = currentMonthBudget;
       let actualPaidThisMonth = 0;
 
@@ -137,8 +141,10 @@ export default function App() {
       });
 
       sortedDebts.forEach(d => {
-        if (d.bal > 0 && currentMonthOverride.debts?.[d.id] !== undefined) {
-          let manualPay = Math.min(currentMonthOverride.debts[d.id], extra, d.bal);
+        let rawDebt = currentMonthOverride.debts?.[d.id];
+        let parsedDebt = parseFloat(rawDebt);
+        if (d.bal > 0 && rawDebt !== undefined && rawDebt !== '' && !isNaN(parsedDebt)) {
+          let manualPay = Math.min(parsedDebt, extra, d.bal);
           d.pay += manualPay; d.bal -= manualPay; extra -= manualPay; actualPaidThisMonth += manualPay;
           d.isManual = true;
         } else d.isManual = false;
@@ -286,16 +292,21 @@ export default function App() {
     setDebts(prev => prev.map(d => d.id === id ? { ...d, [field]: value } : d));
   };
 
+  const activeOverrideKeys = Object.keys(overrides).filter(m => {
+    const t = overrides[m].total;
+    const d = overrides[m].debts;
+    return (t !== undefined && t !== '') || (d && Object.values(d).some(v => v !== undefined && v !== ''));
+  });
+
   const getOverrideReason = () => {
-    const keys = Object.keys(overrides);
-    if (keys.length === 0) return null;
-    const sortedKeys = keys.map(Number).sort((a, b) => a - b);
-    if (keys.length > 3) return `ระยะเวลาปลดหนี้/ดอกเบี้ยรวมเปลี่ยนแปลงเนื่องจากมีการปรับแต่งข้อมูลด้วยตนเองรวม ${keys.length} เดือน`;
+    if (activeOverrideKeys.length === 0) return null;
+    const sortedKeys = activeOverrideKeys.map(Number).sort((a, b) => a - b);
+    if (sortedKeys.length > 3) return `ระยะเวลาปลดหนี้/ดอกเบี้ยรวมเปลี่ยนแปลงเนื่องจากมีการปรับแต่งข้อมูลด้วยตนเองรวม ${sortedKeys.length} เดือน`;
     let reasonParts = [];
     sortedKeys.forEach(m => {
       let part = `เดือนที่ ${m}`;
-      if (overrides[m].total !== undefined) part += " (แก้ไขยอดจ่ายรวม)";
-      if (overrides[m].debts) part += " (แก้ไขยอดโอนรายก้อน)";
+      if (overrides[m].total !== undefined && overrides[m].total !== '') part += " (แก้ไขยอดจ่ายรวม)";
+      if (overrides[m].debts && Object.values(overrides[m].debts).some(v => v !== undefined && v !== '')) part += " (แก้ไขยอดโอนรายก้อน)";
       reasonParts.push(part);
     });
     return `ระยะเวลาปลดหนี้/ดอกเบี้ยรวมเปลี่ยนแปลงเนื่องจากมีการแก้ไขข้อมูลใน: ${reasonParts.join(', ')}`;
@@ -303,7 +314,7 @@ export default function App() {
 
   const formatMoney = (n) => Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2 });
   
-  const isModified = Object.keys(overrides).length > 0;
+  const isModified = activeOverrideKeys.length > 0;
   const diffMonths = baseReport && report ? report.totalMonths - baseReport.totalMonths : 0;
   const diffInt = baseReport && report ? report.totalInterest - baseReport.totalInterest : 0;
   const hasChange = diffMonths !== 0 || diffInt !== 0;
@@ -562,14 +573,26 @@ export default function App() {
                           {isEditingTable ? (
                             <input type="number" value={overrides[row.month]?.total !== undefined ? overrides[row.month].total : Math.round(row.totalPaid)} 
                               onChange={(e) => {
-                                const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                                const val = e.target.value;
                                 const next = {...overrides};
                                 if (!next[row.month]) next[row.month] = {};
-                                if (val === undefined) delete next[row.month].total; else next[row.month].total = val;
+                                next[row.month].total = val;
                                 setOverrides(next); 
                                 const newRep = generateReport(next);
                                 if(newRep) setReport(newRep);
-                              }} className="w-20 p-1 border-2 border-amber-300 rounded-lg text-center bg-white shadow-inner font-black print:hidden outline-none" />
+                              }} 
+                              onBlur={(e) => {
+                                if (e.target.value === '') {
+                                  const next = {...overrides};
+                                  if (next[row.month]) {
+                                    delete next[row.month].total;
+                                    setOverrides(next);
+                                    const newRep = generateReport(next);
+                                    if(newRep) setReport(newRep);
+                                  }
+                                }
+                              }}
+                              className="w-20 p-1 border-2 border-amber-300 rounded-lg text-center bg-white shadow-inner font-black print:hidden outline-none" />
                           ) : null}
                           <span className={isEditingTable ? 'hidden print:inline font-black' : 'text-emerald-600 font-black'}>฿{formatMoney(row.totalPaid)}</span>
                         </td>
@@ -581,15 +604,27 @@ export default function App() {
                                 {isEditingTable ? (
                                   <input type="number" value={overrides[row.month]?.debts?.[col.id] !== undefined ? overrides[row.month].debts[col.id] : Math.round(s.pay)}
                                     onChange={(e) => {
-                                      const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                                      const val = e.target.value;
                                       const next = {...overrides};
                                       if (!next[row.month]) next[row.month] = {};
                                       if (!next[row.month].debts) next[row.month].debts = {};
-                                      if (val === undefined) delete next[row.month].debts[col.id]; else next[row.month].debts[col.id] = val;
+                                      next[row.month].debts[col.id] = val;
                                       setOverrides(next); 
                                       const newRep = generateReport(next);
                                       if(newRep) setReport(newRep);
-                                    }} className="w-16 p-1 border-2 border-emerald-300 rounded-lg text-center bg-white shadow-inner font-black print:hidden outline-none" />
+                                    }} 
+                                    onBlur={(e) => {
+                                      if (e.target.value === '') {
+                                        const next = {...overrides};
+                                        if (next[row.month] && next[row.month].debts) {
+                                          delete next[row.month].debts[col.id];
+                                          setOverrides(next);
+                                          const newRep = generateReport(next);
+                                          if(newRep) setReport(newRep);
+                                        }
+                                      }
+                                    }}
+                                    className="w-16 p-1 border-2 border-emerald-300 rounded-lg text-center bg-white shadow-inner font-black print:hidden outline-none" />
                                 ) : null}
                                 <span className={isEditingTable ? 'hidden print:inline font-bold' : 'font-bold'}>{formatMoney(s.pay)}</span>
                               </td>
