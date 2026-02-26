@@ -10,11 +10,17 @@
       body { font-family: 'Sarabun', sans-serif; }
       @media print {
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .print\\:hidden { display: none !important; }
+        .print\:hidden { display: none !important; }
         @page { margin: 0.5cm; }
         body { background-color: white !important; padding: 0 !important; }
       }
     </style>
+    
+    <!-- ส่งค่าจาก Environment ของ Vercel ไปจำลองให้ app.jsx ใช้งานได้ -->
+    <script>
+      var __firebase_config = '%VITE_FIREBASE_CONFIG%';
+      var __app_id = '%VITE_APP_ID%';
+    </script>
   </head>
   <body class="bg-slate-50">
     <div id="root"></div>
