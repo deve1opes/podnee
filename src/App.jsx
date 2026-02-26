@@ -520,20 +520,20 @@ export default function App() {
               <div className="overflow-x-auto max-h-[600px] print:max-h-none print:overflow-visible">
                 {/* อัปเดตตารางสำหรับ Print Layout ตรงนี้ */}
                 <table className="w-full text-right text-xs whitespace-nowrap print:whitespace-normal">
-                  <thead className="bg-slate-900 text-white sticky top-0 z-30">
+                  <thead className="bg-slate-900 text-white sticky top-0 z-30 print:bg-slate-100 print:text-slate-900 print:border-b-2 print:border-slate-300">
                     <tr className="divide-x divide-slate-800 print:divide-slate-300">
-                      <th className="p-4 text-center align-middle font-black print:p-1.5 print:text-[9px] print:text-slate-700">เดือน</th>
-                      <th className="p-4 text-center align-middle font-black print:p-1.5 print:text-[9px] print:text-slate-700">หนี้คงเหลือรวม</th>
-                      <th className={`p-4 text-center align-middle font-black transition-colors print:p-1.5 print:text-[9px] print:text-slate-700 ${isEditingTable ? 'bg-amber-600 text-white' : 'text-emerald-400'}`}>ยอดชำระรวม {isEditingTable && <span className="block text-[8px] font-normal">(แก้ไข)</span>}</th>
+                      <th className="p-4 text-center align-middle font-black print:p-1.5 print:text-[9px]">เดือน</th>
+                      <th className="p-4 text-center align-middle font-black print:p-1.5 print:text-[9px]">หนี้คงเหลือรวม</th>
+                      <th className={`p-4 text-center align-middle font-black transition-colors print:p-1.5 print:text-[9px] print:bg-transparent print:text-slate-900 ${isEditingTable ? 'bg-amber-600 text-white' : 'text-emerald-400'}`}>ยอดชำระรวม {isEditingTable && <span className="block text-[8px] font-normal print:hidden">(แก้ไข)</span>}</th>
                       {report.originalCols.map(d => (
                         <Fragment key={d.id}>
-                          <th className="p-4 text-center align-middle bg-slate-800/80 font-black print:p-1.5 print:bg-white print:text-slate-700 print:text-[9px] print:leading-tight">
+                          <th className="p-4 text-center align-middle bg-slate-800/80 font-black print:p-1.5 print:bg-transparent print:text-[9px] print:leading-tight">
                             {d.name}<br/>
-                            <span className={`text-[8px] font-bold tracking-widest print:text-[8px] print:text-slate-500 ${isEditingTable ? 'text-amber-400' : 'text-emerald-400'}`}>โอนจ่าย {isEditingTable && '(แก้ไข)'}</span>
+                            <span className={`text-[8px] font-bold tracking-widest print:text-[8px] print:text-slate-600 ${isEditingTable ? 'text-amber-400' : 'text-emerald-400'}`}>โอนจ่าย <span className="print:hidden">{isEditingTable && '(แก้ไข)'}</span></span>
                           </th>
-                          <th className="p-4 text-center align-middle bg-slate-800/80 font-black print:p-1.5 print:bg-white print:text-slate-700 print:text-[9px] print:leading-tight">
+                          <th className="p-4 text-center align-middle bg-slate-800/80 font-black print:p-1.5 print:bg-transparent print:text-[9px] print:leading-tight">
                             {d.name}<br/>
-                            <span className="text-[8px] font-bold tracking-widest text-slate-500 uppercase print:text-[8px] print:text-slate-400">คงเหลือ</span>
+                            <span className="text-[8px] font-bold tracking-widest text-slate-500 uppercase print:text-[8px] print:text-slate-600">คงเหลือ</span>
                           </th>
                         </Fragment>
                       ))}
